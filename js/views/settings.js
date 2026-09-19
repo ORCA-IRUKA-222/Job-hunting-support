@@ -56,8 +56,12 @@ export function render() {
       </div>
       <div class="field">
         <label class="field__label" for="setGistId">Gist ID</label>
-        <input class="input" id="setGistId" value="${esc(g.id)}" placeholder="初回アップロードで自動作成されます" autocomplete="off">
-        <div class="field__hint">2台目以降は、1台目に表示された ID をここに入力します。</div>
+        <input class="input" id="setGistId" value="${esc(g.id)}" placeholder="1台目は空のままでOK" autocomplete="off">
+        <div class="field__hint">
+          <strong>1台目は空のままにしてください。</strong>
+          「クラウドに保存する」を押すと Gist が作られ、ここに ID が自動で入ります。
+          2台目以降は、1台目に表示されたその ID をコピーして入力します。
+        </div>
       </div>
       <div class="field">
         <label class="switch">
@@ -66,8 +70,8 @@ export function render() {
         </label>
       </div>
       <div class="btn-row">
-        <button class="btn" id="btnPull"${g.token && g.id ? '' : ' disabled'}>クラウドから取り込む</button>
-        <button class="btn btn--primary" id="btnPush"${g.token ? '' : ' disabled'}>クラウドに保存する</button>
+        <button class="btn" id="btnPull">クラウドから取り込む</button>
+        <button class="btn btn--primary" id="btnPush">クラウドに保存する</button>
       </div>
       <p class="small muted" style="margin-top:10px">
         状態：${g.token ? (d.lastSyncedAt
@@ -105,13 +109,32 @@ export function mount(root, ctx) {
   const on = (sel, ev, fn) => { const el = root.querySelector(sel); if (el) el.addEventListener(ev, fn); };
   const saveField = (sel, apply) => {
     const el = root.querySelector(sel);
-    if (el) el.addEventListener('change', () => { update(apply(el)); toast('保存しました', 'ok'); });
+    if (el) el.addEventListener('change', () => {
+      update(apply(el), { silent: true });
+      ctx.refreshChrome();
+      toast('保存しました', 'ok');
+    });
   };
 
   saveField('#setName', el => d => { d.profile.name = el.value.trim(); });
   saveField('#setGrad', el => d => { d.profile.gradYear = el.value.trim(); });
   saveField('#setToken', el => d => { d.settings.gist.token = el.value.trim(); });
   saveField('#setGistId', el => d => { d.settings.gist.id = el.value.trim(); });
+
+  /** 入力途中の値を確実に取り込む（blur 前にボタンを押された場合に備える） */
+  const commitSyncFields = () => {
+    const token = root.querySelector('#setToken').value.trim();
+    const id = root.querySelector('#setGistId').value.trim();
+    const g = getData().settings.gist;
+    if (g.token === token && g.id === id) return;   // 変更がなければ書き込まない
+    update(d => { d.settings.gist.token = token; d.settings.gist.id = id; }, { silent: true });
+  };
+
+  /** 上書きの確認が要るのは、この端末に実際のデータがあるときだけ */
+  const hasLocalData = () => {
+    const d = getData();
+    return d.companies.length + d.tasks.length + d.answers.length + d.notes.length > 0;
+  };
 
   on('#setTheme', 'change', e => {
     update(d => { d.settings.theme = e.target.value; });
@@ -120,6 +143,12 @@ export function mount(root, ctx) {
   on('#setAuto', 'change', e => update(d => { d.settings.gist.auto = e.target.checked; }));
 
   on('#btnPush', 'click', async (e) => {
+    commitSyncFields();
+    if (!getData().settings.gist.token) {
+      toast('先にアクセストークンを入力してください', 'err');
+      root.querySelector('#setToken').focus();
+      return;
+    }
     e.target.disabled = true;
     try {
       const id = await sync.push();
@@ -130,7 +159,14 @@ export function mount(root, ctx) {
   });
 
   on('#btnPull', 'click', async (e) => {
-    if (isDirty() && !await confirmDialog(
+    commitSyncFields();
+    const g = getData().settings.gist;
+    if (!g.token || !g.id) {
+      toast(g.token ? '先に Gist ID を入力してください' : '先にアクセストークンを入力してください', 'err');
+      root.querySelector(g.token ? '#setGistId' : '#setToken').focus();
+      return;
+    }
+    if (hasLocalData() && isDirty() && !await confirmDialog(
       'この端末の未同期の変更が、クラウドの内容で上書きされます。よろしいですか？',
       { okLabel: '取り込む', danger: false })) return;
     e.target.disabled = true;

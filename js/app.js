@@ -26,6 +26,7 @@ const ctx = {
   rerender,
   applyTheme,
   refreshFab,
+  refreshChrome,
 };
 
 /* ---------- ルーティング ---------- */
@@ -67,11 +68,16 @@ function rerender({ keepFocus = null } = {}) {
     window.scrollTo(0, scrollY);
   }
 
-  $('#topTitle').textContent = view.label;
-  $('#topSub').textContent = subtitle();
-  renderNav();
+  refreshChrome();
   refreshFab();
   sync.refreshIndicator();
+}
+
+/** 画面本体は描き直さずに、トップバーとナビだけ更新する */
+function refreshChrome() {
+  $('#topTitle').textContent = VIEWS[ctx.route].label;
+  $('#topSub').textContent = subtitle();
+  renderNav();
 }
 
 function subtitle() {
