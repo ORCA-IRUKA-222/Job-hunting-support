@@ -191,6 +191,20 @@ export function allAgenda() {
     (a.date + (a.time || '99:99')).localeCompare(b.date + (b.time || '99:99')));
 }
 
+/**
+ * 同期・バックアップ用の JSON。
+ *
+ * アクセストークンと Gist ID は絶対に含めない。
+ * これらを Gist に書き込むと GitHub の secret scanning に漏洩と判定され、
+ * トークンが自動的に無効化される（1回目は成功し、2回目以降や別端末で
+ * 「トークンが無効です」になる原因になっていた）。
+ * Gist ID も、知っていれば秘密 Gist を閲覧できてしまうため書き出さない。
+ */
 export function exportJSON() {
-  return JSON.stringify({ ...data, exportedAt: new Date().toISOString() }, null, 2);
+  const { gist, ...settingsRest } = data.settings;
+  return JSON.stringify({
+    ...data,
+    settings: { ...settingsRest, gist: { token: '', id: '', auto: false } },
+    exportedAt: new Date().toISOString(),
+  }, null, 2);
 }

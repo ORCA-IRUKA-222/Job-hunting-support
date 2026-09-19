@@ -58,6 +58,10 @@ export async function push({ silent = false } = {}) {
   busy = true; refreshIndicator();
   try {
     const content = exportJSON();
+    // 保険：万一トークンが混ざっていたら送信しない
+    if (cfg().token && content.includes(cfg().token)) {
+      throw new Error('内部エラーのため中止しました（送信データにトークンが含まれています）');
+    }
     let id = cfg().id;
     if (id) {
       await api(`/gists/${id}`, {
