@@ -77,12 +77,18 @@ python3 -m http.server 8000
 
 スマホとPCで同じデータを見たい場合は、**GitHub Gist** を使った同期を設定できます。
 
-1. GitHub で **Settings → Developer settings → Personal access tokens → Tokens (classic)** を開く
-2. **Generate new token** を押し、権限は **`gist` だけ** にチェックして作成
-3. 表示されたトークンをコピー（1回しか表示されません）
-4. アプリの **設定 → 端末間の同期** にトークンを貼り付ける
-5. **「クラウドに保存する」** を押す → 非公開の Gist が作られ、**Gist ID** が表示される
-6. 2台目の端末では、同じトークンと **手順5の Gist ID** を入力し、
+1. <https://github.com/settings/tokens> を開く
+   - 画面からたどる場合: 右上のアイコン → **Settings**（リポジトリの Settings ではなく
+     アカウントの Settings）→ 左サイドバーを一番下までスクロールして
+     **Developer settings** → **Personal access tokens** → **Tokens (classic)**
+2. **Generate new token** → **Generate new token (classic)** を選ぶ
+3. **Note** に分かりやすい名前、**Expiration** に有効期限を入れる
+4. **Select scopes** で **`gist` だけ** にチェックして **Generate token**
+   - 「Fine-grained tokens」は Gist に対応していないので、**classic** を使ってください
+5. 表示されたトークンをコピー（1回しか表示されません）
+6. アプリの **設定 → 端末間の同期** にトークンを貼り付ける
+7. **「クラウドに保存する」** を押す → 非公開の Gist が作られ、**Gist ID** が表示される
+8. 2台目の端末では、同じトークンと **手順7の Gist ID** を入力し、
    **「クラウドから取り込む」** を押す
 
 「自動で同期する」を ON にすると、起動時に取り込み、変更時に自動保存します。

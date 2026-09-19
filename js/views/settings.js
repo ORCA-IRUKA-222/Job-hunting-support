@@ -47,8 +47,11 @@ export function render() {
         <input class="input" id="setToken" type="password" value="${esc(g.token)}"
                placeholder="ghp_… / github_pat_…" autocomplete="off">
         <div class="field__hint">
-          GitHub → Settings → Developer settings → Personal access tokens で
-          <strong>gist</strong> だけにチェックして作成してください。
+          <a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer">github.com/settings/tokens</a>
+          を開き（右上のアイコン → Settings → 左サイドバーの一番下の Developer settings →
+          Personal access tokens → <strong>Tokens (classic)</strong>）、
+          Generate new token (classic) から <strong>gist</strong> だけにチェックして作成してください。
+          Fine-grained tokens は Gist に対応していません。
         </div>
       </div>
       <div class="field">
