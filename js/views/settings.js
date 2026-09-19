@@ -70,6 +70,7 @@ export function render() {
         </label>
       </div>
       <div class="btn-row">
+        <button class="btn" id="btnTest">接続をテスト</button>
         <button class="btn" id="btnPull">クラウドから取り込む</button>
         <button class="btn btn--primary" id="btnPush">クラウドに保存する</button>
       </div>
@@ -141,6 +142,24 @@ export function mount(root, ctx) {
     ctx.applyTheme();
   });
   on('#setAuto', 'change', e => update(d => { d.settings.gist.auto = e.target.checked; }));
+
+  on('#btnTest', 'click', async (e) => {
+    commitSyncFields();
+    e.target.disabled = true;
+    const prev = e.target.textContent;
+    e.target.textContent = '確認中…';
+    try {
+      const r = await sync.diagnose();
+      await confirmDialog(r.message, {
+        title: r.ok ? '接続できました' : '接続できませんでした',
+        okLabel: '閉じる', danger: false, noCancel: true,
+      });
+      if (r.ok) toast('接続できました', 'ok');
+    } finally {
+      e.target.disabled = false;
+      e.target.textContent = prev;
+    }
+  });
 
   on('#btnPush', 'click', async (e) => {
     commitSyncFields();

@@ -257,7 +257,8 @@ a { color: var(--accent); }
 .stars { display: flex; gap: 2px; }
 .stars button { background: none; border: 0; cursor: pointer; font-size: 23px; line-height: 1; color: var(--surface-3); padding: 0 1px; }
 .stars button[data-on="1"] { color: #f0a92a; }
-.switch { display: flex; align-items: center; gap: 10px; justify-content: space-between; }
+/* .field > label より詳細度を上げないと display:block に負ける */
+.switch, .field > label.switch { display: flex; align-items: center; gap: 12px; justify-content: space-between; }
 .switch input { width: 20px; height: 20px; accent-color: var(--accent); }
 
 /* ===== modal ===== */

@@ -44,19 +44,19 @@ export function openModal({ title, body, foot = '', onMount }) {
 }
 
 /** はい/いいえの確認。Promise<boolean> */
-export function confirmDialog(message, { okLabel = '削除する', danger = true } = {}) {
+export function confirmDialog(message, { okLabel = '削除する', danger = true, title = '確認', noCancel = false } = {}) {
   return new Promise(resolve => {
     let answer = false;
     const d = createDialog();
     d.innerHTML = shell({
-      title: '確認',
+      title,
       body: `<p class="pre-wrap">${esc(message)}</p>`,
-      foot: `<button type="button" class="btn" data-no>キャンセル</button>
+      foot: `${noCancel ? '' : '<button type="button" class="btn" data-no>キャンセル</button>'}
              <button type="button" class="btn ${danger ? 'btn--danger' : 'btn--primary'}" data-yes>${esc(okLabel)}</button>`,
     });
     d.querySelector('#modalForm').addEventListener('submit', e => e.preventDefault());
     d.querySelector('[data-close]').onclick = () => d.close();
-    d.querySelector('[data-no]').onclick = () => d.close();
+    d.querySelector('[data-no]')?.addEventListener('click', () => d.close());
     d.querySelector('[data-yes]').onclick = () => { answer = true; d.close(); };
     d.onclick = (e) => { if (e.target === d) d.close(); };
     d.addEventListener('close', () => resolve(answer), { once: true });

@@ -43,8 +43,8 @@ async function api(path, options = {}) {
     },
   });
   if (!res.ok) {
-    const msg = res.status === 401 ? 'トークンが無効です'
-      : res.status === 404 ? 'Gist が見つかりません'
+    const msg = res.status === 401 ? 'トークンが違います。「接続をテスト」で確認してください'
+      : res.status === 404 ? 'Gist が見つかりません（gist 権限がないか、ID が違います）'
       : res.status === 403 ? 'アクセスが拒否されました（gist 権限を確認してください）'
       : `通信エラー (${res.status})`;
     throw new Error(msg);
@@ -135,4 +135,65 @@ export function schedulePush() {
       toast(`自動同期に失敗: ${err.message}`, 'err');
     });
   }, 2500);
+}
+
+
+/**
+ * トークンの状態を調べる。
+ * 401（トークンそのものが違う）と、権限不足（gist スコープなし / fine-grained）を
+ * はっきり区別して伝える。
+ */
+export async function diagnose() {
+  const token = (cfg().token || '').trim();
+  if (!token) return { ok: false, message: 'アクセストークンが入力されていません。' };
+
+  let res;
+  try {
+    res = await fetch(`${API}/user`, {
+      headers: {
+        'Accept': 'application/vnd.github+json',
+        'Authorization': `Bearer ${token}`,
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+    });
+  } catch {
+    return { ok: false, message: 'GitHub に接続できませんでした。通信環境を確認してください。' };
+  }
+
+  if (res.status === 401) {
+    return {
+      ok: false,
+      message: 'トークンが GitHub に認識されませんでした。\n\n'
+        + '・先頭の ghp_ から末尾まで、全体をコピーできていますか\n'
+        + '・前後や途中に空白・改行が入っていませんか\n'
+        + '・有効期限が切れていたり、削除していませんか\n'
+        + '・Gist ID 欄とトークン欄を逆に入れていませんか\n\n'
+        + '心当たりがなければ、トークンを作り直すのが確実です。',
+    };
+  }
+  if (!res.ok) {
+    return { ok: false, message: `GitHub がエラーを返しました (${res.status})。時間をおいて試してください。` };
+  }
+
+  const user = (await res.json()).login;
+  const raw = res.headers.get('X-OAuth-Scopes');
+  const scopes = (raw || '').split(',').map(x => x.trim()).filter(Boolean);
+
+  if (!scopes.length) {
+    return {
+      ok: false, user,
+      message: `${user} として認証できましたが、このトークンには gist 権限がありません。\n\n`
+        + 'Fine-grained token は Gist に対応していません。\n'
+        + 'Tokens (classic) から、gist にチェックを入れて作り直してください。',
+    };
+  }
+  if (!scopes.includes('gist')) {
+    return {
+      ok: false, user,
+      message: `${user} として認証できましたが、gist 権限がありません。\n\n`
+        + `現在の権限: ${scopes.join(', ')}\n\n`
+        + 'GitHub のトークン設定画面で gist にチェックを入れて更新してください。',
+    };
+  }
+  return { ok: true, user, message: `${user} として接続できました。gist 権限もあります。` };
 }
