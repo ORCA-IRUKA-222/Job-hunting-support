@@ -1,0 +1,48 @@
+name: やることをメールで通知
+
+on:
+  schedule:
+    # 毎朝 8:00 (日本時間) ＝ 23:00 UTC。時刻を変えるならここを編集する。
+    - cron: '0 23 * * *'
+  # 手動実行（設定の確認に使う）
+  workflow_dispatch:
+    inputs:
+      always_send:
+        description: '知らせることがなくても送る'
+        type: boolean
+        default: true
+
+# pull_request では動かさない（Secrets を外部に晒さないため）
+permissions:
+  contents: read
+
+concurrency:
+  group: notify
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 通知を送る
+        env:
+          JHS_GIST_TOKEN: ${{ secrets.JHS_GIST_TOKEN }}
+          JHS_GIST_ID:    ${{ secrets.JHS_GIST_ID }}
+          SMTP_USER:      ${{ secrets.SMTP_USER }}
+          SMTP_PASS:      ${{ secrets.SMTP_PASS }}
+          MAIL_TO:        ${{ secrets.MAIL_TO }}
+          SMTP_HOST:      ${{ vars.SMTP_HOST }}
+          SMTP_PORT:      ${{ vars.SMTP_PORT }}
+          SMTP_SECURITY:  ${{ vars.SMTP_SECURITY }}
+          NOTIFY_DAYS:    ${{ vars.NOTIFY_DAYS }}
+          APP_URL:        ${{ vars.APP_URL }}
+          TIMEZONE:       ${{ vars.TIMEZONE }}
+          ALWAYS_SEND:    ${{ inputs.always_send && '1' || '' }}
+        run: python scripts/notify.py
